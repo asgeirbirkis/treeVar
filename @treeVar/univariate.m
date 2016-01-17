@@ -9,19 +9,18 @@ function treeOut = univariate(treeIn, method)
 %      TREEOUT = UNIVARIATE(TREEIN, METHOD)
 %
 %   The inputs to this method are:
-%      TREEIN: A MATLAB struct for representing the syntax tree of a 
-%              mathematical expressions that the METHOD operates on.
+%      TREEIN: A TREEVAR for representing the syntax tree of a mathematical
+%              expressions that the METHOD operates on.
 %      METHOD: The name of the method that invokes the call to UNIVARIATE.
 %
 %   The output of this method is:
-%      TREEOUT: A MATLAB struct that represents the syntax tree of the 
-%                mathematical expression, obtained once METHOD has operated on 
-%                TREEIN.
+%      TREEOUT: A TREEVAR that represents the syntax tree of the mathematical 
+%                expression, obtained once METHOD has operated on TREEIN.
 
 % Copyright 2015 by The University of Oxford and The Chebfun Developers.
 % See http://www.chebfun.org/ for Chebfun information.
 
-% Construct a new MATLAB struct to be returned.
+% Construct a new TREEVAR to be returned.
 treeOut = treeIn;
 treeOut.height = treeIn.height + 1;
 treeOut.method = method;
