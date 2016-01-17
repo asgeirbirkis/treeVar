@@ -1,14 +1,12 @@
-function plotTree(tree, varNames)
-%PLOTTREE   Plot a syntax tree (as stored in a TREEVAR object).
+function plot(tree, varNames)
+%PLOT   Plot a syntax tree (as stored in a TREEVAR object).
 %   Calling sequence:
-%      TREEVAR.PLOTTREE(TREE, VARNAMES)
+%      PLOT(TREE, VARNAMES)
 %   where the input is:
-%      TREE:     A MATLAB struct, describing the syntax tree of a mathematical
+%      TREE:     A TREEVAR, describing the syntax tree of a mathematical
 %                expression.
 %      VARNAMES: An optional cellstring, whose elements are the name of the
 %                variables that appear in a problem.
-%
-%   Usually, this method is called from within the TREEVAR plot() method.
 %
 %   Example:
 %      % First, define a TREEVAR and carry out some operations:
@@ -16,11 +14,9 @@ function plotTree(tree, varNames)
 %      v = cos(u);
 %      w = sin(diff(u));
 %      t = v + w;
-%      % The following are equivalent:
 %      plot(t)
-%      treeVar.plotTree(t.tree)
 %
-% See also TREEVAR.PLOT.
+% See also TREEVAR.PRINT.
 
 % Copyright 2015 by The University of Oxford and The Chebfun Developers. 
 % See http://www.chebfun.org/ for Chebfun information.
@@ -176,10 +172,10 @@ if ( strcmp(tree.method, 'constr') )
         varString = varNames{varID + 1};
     end
     
-    text(tree.x + 0.02, tree.y - 0.01, varString, 'Interpreter', 'none', ...
+    text(tree.x + 0.02, tree.y, varString, 'Interpreter', 'none', ...
         'fontsize',14)
 else
-    text(tree.x + 0.02, tree.y - 0.01, tree.method, 'Interpreter', 'none', ...
+    text(tree.x + 0.02, tree.y, tree.method, 'Interpreter', 'none', ...
         'fontsize',14)
 end
 
