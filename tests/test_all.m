@@ -1,0 +1,12 @@
+sprintf('test_bivariate')
+test_bivariate
+sprintf('test_plotTree')
+test_plotTree
+sprintf('test_printTree')
+test_printTree
+sprintf('test_sortConditions')
+test_sortConditions
+sprintf('test_toFirstOrder')
+test_toFirstOrder
+sprintf('test_univariate')
+test_univariate
