@@ -1,23 +1,21 @@
-function idx = sortConditions(funIn, domain, maxDiffOrders)
+function idx = sortConditions(funIn, maxDiffOrders)
 %SORTCONDITIONS   Returns how the results of evaluating BCs should be sorted.
 %   Calling sequence:
-%      IDX = SORTCONDITIONS(FUNIN, DOMAIN, DIFFORDERS)
+%      IDX = SORTCONDITIONS(FUNIN, DIFFORDERS)
 %   where the inputs are:
-%      FUNIN:         An anonymous function, that usually specifies N.LBC or
-%                     N.RBC of a CHEBOP.
-%      DOMAIN:        The domain of the problem.
+%      FUNIN:         An anonymous function, that usually specifies right or
+%                     left boundary conditions of a differential equation.
 %      MAXDIFFORDERS: The highest order of derivatives which each derivative
 %                     appears in a problem.
 %   and the output is
 %      IDX:    A vector with indices on how to sort the results of evaluating
-%              N.LBC/RBC, so that they match the order required by the MATLAB 
-%              ODE solvers.
+%              LBC/RBC, so that they match the order required by the MATLAB ODE
+%              solvers.
 %
 %   Example:
 %      Assume that for a coupled system, we want to specify the ICs
 %         u(0) = 1, u'(0) = 2, v(0) = 0, v'(0) = 3.
-%      One anonymous function we could create to specify those conditions and
-%      append to a CHEBOP is
+%      One anonymous function we could create to specify those conditions is
 %         fun = @(u,v) [u-1; diff(v)-3; v; diff(u)-2]; 
 %      However, when we evaluate this function to pick out the initial 
 %      conditions, we get the vector
@@ -43,7 +41,7 @@ for argCount = 1:numArgs
     % Set the ID of the current variable to 1:
     argsVec(argCount) = 1;
     % Construct the TREEVAR:
-    args{argCount} = treeVar(argsVec, domain);
+    args{argCount} = treeVar(argsVec);
     % Reset the index vector:
     argsVec = 0*argsVec;
 end
@@ -59,22 +57,21 @@ diffOrderList = varList;
 % Loop through the resulting syntax trees.
 for tCounter = 1:length(bcResults)
     % Current tree we're looking at:
-    tempTree = bcResults(tCounter).tree;
+    tempTree = bcResults(tCounter);
     
     % Check whether more than one variable appear in the condition, which we
     % don't support:
     assert( sum(tempTree.ID) <= 1, ...
-        'CHEBFUN:TREEVAR:sortConditions:nonSeparated', ...
+        'TREEVAR:sortConditions:nonSeparated', ...
         'For initial value problems, only separated conditions are supported.')
     
     % Ensure that only initial/final conditions on the form we support appear:
     assert(acceptedCondition(tempTree), ...
-        'CHEBFUN:TREEVAR:sortConditions:unsupportedCondition', [ ...
+        'TREEVAR:sortConditions:unsupportedCondition', [ ...
         'Initial/final condition not supported. Please ensure that the\n' ...
         'unknown function(s) appear only once in each condition,\n' ...
         'e.g. not as u + u'' - 1, and that the coefficient of the unknown\n'...
-        'function is 1, e.g. not 5*u-1. Alternatively, try solving the\n' ...
-        'problem in collocation mode (see help cheboppref for details).']);
+        'function is 1, e.g. not 5*u-1.']);
     
     % What's the active variable in the current tree (i.e. what variable did the
     % constraint apply to)?
@@ -102,13 +99,13 @@ for varCounter = 1:numArgs
     % Check that the user is not specifying initial values for too high order
     % derivatives.
     assert( varDiffOrders(end) < maxDiffOrders(varCounter), ...
-        'CHEBFUN:TREEVAR:sortConditions:tooHighOrderCondition', ...
+        'TREEVAR:sortConditions:tooHighOrderCondition', ...
         'The value of a derivative of a too high order was specified.')
     
     % Check that multiple values for the same derivative value was not
     % specified:
     assert( length(varDiffOrders) == 1 || ~(any(diff(varDiffOrders)) == 0), ...
-        'CHEBFUN:TREEVAR:sortConditions:multipleConditionsSameVariable', [...
+        'TREEVAR:sortConditions:multipleConditionsSameVariable', [...
         'Multiple initial conditions on the same variable/derivative '...
         'specified.'])
     
@@ -117,7 +114,7 @@ for varCounter = 1:numArgs
     % appropriate derivatives.
     assert( all(diff(varDiffOrders) == 1) && ...
         length(varDiffOrders) == maxDiffOrders(varCounter), ...
-        'CHEBFUN:TREEVAR:sortConditions:missingConditions', [...
+        'TREEVAR:sortConditions:missingConditions', [...
         'Solving an nth order IVP/FVP requires specifying values of the \n' ...
         'solution and all the (n-1)st derivatives at the endpoint.'])
     assert( all( diff(varDiffOrders) == 1) && varDiffOrders(1) == 0, ...
@@ -138,7 +135,7 @@ function accepted = acceptedCondition(tree)
 % it returns TRUE.
 
 % If TREE is not a struct, or it has height 0, it can't cause any harm:
-if ( ~isstruct(tree) || ( tree.height == 0 ) )
+if ( ~isa(tree, 'treeVar') || ( tree.height == 0 ) )
     accepted = true;
 
 % Deal with the case where the operator is + or -
@@ -154,9 +151,9 @@ elseif ( any(strcmp(tree.method, {'plus', 'minus'})) )
     % we only need to check the other. If both arguments are trees, we need
     % ensure that both don't have any IDs, and in the case that happens, check
     % the validity of each subtree.
-    if ( ~isstruct(tree.left) )
+    if ( ~isa(tree.left, 'treeVar') )
         accepted = acceptedCondition(tree.right);
-    elseif ( ~isstruct(tree.right) )
+    elseif ( ~isa(tree.right, 'treeVar') )
         accepted = acceptedCondition(tree.left);
     elseif ( any(tree.left.ID) && any(tree.right.ID) )
         accepted = false;
