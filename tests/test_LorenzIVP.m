@@ -5,7 +5,7 @@ function pass = test_LorenzIVP(~)
 dom = [0 5];
 tol = 1e-14;
 
-%% With CHEBOP
+%% With TREEVAR
 odeFun = @(t,u,v,w) [diff(u) - 10*(v - u);
     diff(v) - u.*(28 - w) + v;
     diff(w) - u.*v + (8/3)*w];
