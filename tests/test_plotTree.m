@@ -1,6 +1,8 @@
 function pass = test_plotTree(~)
 %TEST_PLOTTREE   Do TREEVAR computations, check that PLOTTREE works.
 
+% Create a hidden figure, so that we don't get figures popping up while running
+% the test.
 hfig = figure('Visible', 'off');
 
 %% Basic computation:

@@ -1,5 +1,5 @@
 function pass = test_printTree(~)
-%%TEST_PRINTTREE    Do TREEVAR computations, check that print and printTree works.
+%%TEST_PRINTTREE   Do TREEVAR computations, check that print and printTree works.
 
 %% Basic computation:
 u = treeVar();

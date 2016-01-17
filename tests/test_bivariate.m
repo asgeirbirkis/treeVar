@@ -1,5 +1,5 @@
 function pass = test_bivariate(~)
-%TEST_BIVARIATE   Test various univariate treeVar methods
+%TEST_BIVARIATE   Test various bivariate treeVar methods
 %   This methods generates a number of anonymous functions that we convert to
 %   first order format. We then evaluate them, and check that they match the
 %   expected results.
