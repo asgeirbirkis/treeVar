@@ -3,24 +3,17 @@
 %TOFIRSTORDER   Convert higher order anonymous functions to first order systems.
 %   Calling sequence:
 %      [FUNOUT, INDEXSTART, PROBLEMDOM, COEFFS, TOTALDIFFORDERS] = ...
-%          TOFIRSTORDER(FUNIN, RHS, DOMAIN)
+%          TOFIRSTORDER(FUNIN, RHS)
 %   where the inputs are:
 %      FUNIN:  An anonymous function which describes an ODE, usually including
 %              higher order derivatives, e.g. @(x,u) diff(u, 2) + sin(u).
-%              Usually, the anonymous function comes from the OP field of a
-%              CHEBOP.
-%      RHS:    The right hand side of the differential equation being solved
-%              with a CHEBOP, that is, the right argument of a CHEBOP
-%              backslash.
-%      DOMAIN: The domain of the problem we're trying to solve.
+%      RHS:    The right hand side of the differential equation being solved.
 %   and the outputs are:
 %      FUNOUT:     An anonymous function that is the first order reformulation
 %                  of FUNIN, which can be passed to the MATLAB solvers.
 %      INDEXSTART: A vector that denotes at which index we should start
 %                  indexing each variable from so that they're in the correct
 %                  order for the MATLAB ODE solvers.
-%      PROBLEMDOM: The domain on which the problem can be specified, which may
-%                  include breakpoints originally not included in DOMAIN.
 %      COEFFS:     A cell array of the coefficients the multiply the highest
 %                  order derivatives in problem. For example, for the problem
 %                  @(x,u) 5*diff(u, 2) + u, we will have COEFFS{1} = 5.
@@ -40,7 +33,7 @@ numArgs = max(1, nargin(funIn) - 1);
 args = cell(numArgs, 1);
 argsVec = zeros(1, numArgs);
 
-% Independent variable on the domain
+% Independent variable
 t = treeVar(zeros(1, numArgs));
 
 % Populate the args cell
@@ -53,7 +46,7 @@ end
 
 % Evaluate FUNIN with the TREEVAR arguments. If FUNIN only has one input
 % argument, we just give it a TREEVAR argument. Otherwise, the first input
-% will be the independent variable on the domain:
+% will be the independent variable:
 if ( nargin(funIn) == 1 )
     fevalResult = funIn(args{:});
 else
@@ -67,29 +60,12 @@ if ( isnumeric(rhs) && length(rhs) == 1 )
     rhs = repmat(rhs, size(fevalResult));
 end
 
-% Ensure RHS is a CHEBMATRIX
-if ( ~isa(rhs, 'chebmatrix') )
-    rhs = chebmatrix(rhs, domain);
-end
-
-
 % Initialize cells to store the infix forms of the expressions, the coefficients
 % multiplying the highest order derivatives and any variables that appear in the
 % anonymous functions:
 systemInfix = cell(length(fevalResult), 1);
 coeffs = systemInfix;
 varArrays = systemInfix;
-
-% We want to return all potential breakpoints caused by piecewise coefficients
-% in the problem. So loop through fevalResult, and take the union of the
-% breakpoints:
-% problemDom = fevalResult(1).domain;
-% for resCounter = 2:length(fevalResult)
-%     problemDom = union(problemDom, fevalResult(resCounter).domain);
-% end
-% 
-% % Ensure we also include potential breakpoints from the RHS:
-% problemDom = union(problemDom, rhs.domain);
 
 % First look at all diffOrders to ensure we start with the correct indices.
 % INDEXSTART denotes at which index we should start indexing each variable from.
@@ -110,8 +86,7 @@ varArrays = systemInfix;
 % the problem. We loop through the each component of the evaluation tree:
 totalDiffOrders = zeros(1, numArgs);
 for wCounter = 1:length(fevalResult)
-    totalDiffOrders = max(totalDiffOrders, ...
-        fevalResult(wCounter).diffOrder);
+    totalDiffOrders = max(totalDiffOrders, fevalResult(wCounter).diffOrder);
 end
 
 % We always start indexing the first variable and its derivative(s) at 1. The
@@ -142,7 +117,7 @@ for wCounter = 1:length(fevalResult)
     % Ensure that we never have the highest derivatives of more than one
     % variable appearing in a single equation:
     if ( sum(totalDiffOrders == diffOrders) > 1 )
-        error('CHEBFUN:TREEVAR:toFirstOrder:diffOrders', ...
+        error('TREEVAR:toFirstOrder:diffOrders', ...
             ['The highest order derivative of more than one variable ' ...
             'appears to be\npresent in the same equation. ' ...
             'Unable to convert to first order format.'])
@@ -170,10 +145,8 @@ for wCounter = 1:length(fevalResult)
     maxDerLoc = find(expTree.diffOrder == totalDiffOrders);
     
     % Convert the derivative part to infix form.
-    % Indicate that we are converting a coeffFun
-    isCoeffFun = true;
     [infixDer, varArrayDer] = ...
-        treeVar.tree2infix(derTree, maxDerLoc, indexStartDer, isCoeffFun);
+        treeVar.tree2infix(derTree, maxDerLoc, indexStartDer);
     
     % Convert the infix form of the expression that gives us the coefficient
     % multiplying the highest order derivative appearing in the expression to an
@@ -195,30 +168,38 @@ for wCounter = 1:length(fevalResult)
         coeffArg(indexStartDer(maxDerLoc+1) - 1) = 1;
     end
     
-    % Evaluate the COEFFFUN to the coefficient!
-    coeffs{maxDerLoc} = coeffFun(t, coeffArg);
+    % If the independent variable doesn't appear COEFFFUN (i.e. the coefficient
+    % is simply a constant), we can evaluate it to obtain the coefficient.
+    % Otherwise, we have to wrap it in another anonymous function to be able to
+    % evaluate it later at arbitrary grid points.
+    if ( isempty(strfind(infixDer, 't,')) && isempty(strfind(infixDer, '(t)')) )
+        coeffs{maxDerLoc} = coeffFun(0, coeffArg);
+    else
+        coeffs{maxDerLoc} = @(t) coeffFun(t, coeffArg);
+    end
     
     % Now work with the remaining syntax tree of the current expression of
     % interest. We need to negate the syntax tree as we're moving it to the
     % right-hand side. But if it already starts with a unary minus, we can
     % simply remove it rather than doing a double negation:
     % [TODO: Remove double UMINUS]
-    tempTree = newTree;
-    newTree = treeVar();
-    newTree.method = 'minus';
-    newTree.numArgs = 2;
-    newTree.left = rhs{wCounter};
-    newTree.right = tempTree;
-%     newTree = struct('method', 'minus', 'numArgs', 2, ...
-%         'left', rhs{wCounter}, 'right', newTree);
+    tempTree = treeVar();
+    tempTree.method = 'minus';
+    tempTree.numArgs = 2;
+    tempTree.left = rhs(wCounter);
+    tempTree.right = newTree;
+    tempTree.diffOrder = newTree.diffOrder;
+    tempTree.height = newTree.height + 1;
+    tempTree.ID = newTree.ID;
+    
     % Convert current expression to infix form:
-    isCoeffFun = false;
     [infix, varArray] = ...
-        treeVar.tree2infix(newTree, maxDerLoc, indexStart, isCoeffFun);
+        treeVar.tree2infix(tempTree, maxDerLoc, indexStart);
     % Store the infix form and the variables that appeared in the anonymous
     % function.
     systemInfix{maxDerLoc} = infix;
     varArrays{maxDerLoc} = varArray;
+    
 end
 
 % Convert all the infix expressions, coefficients and variables stored to an

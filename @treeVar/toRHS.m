@@ -14,8 +14,9 @@ function anonFun = toRHS(systemInfix, varArrays, coeffs,  indexStart, totalDiffO
 %      COEFFS:          A cell array of the coefficients that multiply the
 %                       left hand side of SYSTEMINFIX. For example, for the
 %                       expression 5*diff(u) + u, COEFFS{1} = 5, while for
-%                       sin(x)*diff(u) + u, COEFFS{1} will be the CHEBFUN
-%                       sin(x).
+%                       sin(x)*diff(u) + u, COEFFS{1} will be be an anonymous
+%                       function whose input argument is t, and when evaluated
+%                       at arbitrary grid points returns the value sin(t).
 %      INDEXSTART:      A vector that denotes at which index we should start
 %                       indexing each variable from.
 %      TOTALDIFFORDERS: A vector which contains the maximum diffOrder of each
@@ -66,11 +67,11 @@ for sysCounter = 1:length(systemInfix)
         coeffStr = sprintf('coeffs{%i}', sysCounter);
 
     else
-        % If COEFF is not numeric, it must be a CHEBFUN. But that requires us to
-        % evaluate it at every point T when we evaluate the ODE fun, so we add
-        % the '(t)' part as well, so that it'll be evaluated at the correct
-        % coordinate throughout the ODE solver.
-        coeffStr = sprintf('coeffs{%i}(t)', sysCounter);
+        % If COEFF is not numeric, it must be an anonymous function. But that
+        % requires us to evaluate it at every point T when we evaluate the ODE
+        % fun, so we add the '(t)' part as well, so that it'll be evaluated at
+        % the correct coordinate throughout the ODE solver.
+        coeffStr = sprintf('feval(coeffs{%i},t)', sysCounter);
 
     end
     

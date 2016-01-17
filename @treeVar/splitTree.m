@@ -7,12 +7,12 @@ function [newTree, derTree] = splitTree(tree, maxOrder)
 %      MAXORDER:   A vector that contains the the maximum differential order of
 %                  each variable that appears in the problem.
 %   and the outputs are
-%      NEWTREE:    A syntax tree which describes the factor in which the highest
-%                  order derivative appears. E.g. if we split the expression
-%                  5*diff(u) + sin(u), NEWTREE is the syntax tree corresponding
-%                  to 5*diff(u).
-%      DERTREE:    A syntax tree which describes the remaining factors not 
-%                  included in NEWTREE. In the example above, DERTREE is the 
+%      NEWTREE:    A syntax tree (TREEVAR) which describes the factor in which
+%                  the highest order derivative appears. E.g. if we split the
+%                  expression 5*diff(u) + sin(u), NEWTREE is the syntax tree
+%                  corresponding to 5*diff(u).
+%      DERTREE:    A syntax tree (TREEVAR) which describes the remaining factors
+%                  not included in NEWTREE. In the example above, DERTREE is the
 %                  syntax tree corresponding to sin(u).
 
 % Copyright 2015 by The University of Oxford and The Chebfun Developers.
@@ -22,7 +22,7 @@ function [newTree, derTree] = splitTree(tree, maxOrder)
 diffVar = maxOrder > 0;
 
 % If our input is not a syntax tree, we can be certain we don't need to split it
-% (this can e.g. happen if TREE is a CHEBFUN or a scalar).
+% (this can e.g. happen if TREE is a scalar).
 if ( ~isa(tree, 'treeVar') )
     newTree = tree;
     derTree = [];
@@ -83,22 +83,20 @@ switch tree.numArgs
                 newTree = newTreeLeft;
             elseif ( ~isa(newTreeLeft, 'treeVar') && ...
                     ~isa(newTreeRight, 'treeVar') )
-                % Both left and right trees were actually a CHEBFUN or scalar,
-                % combine them in a single CHEBFUN/scalar and return as the
-                % NEWTREE.
+                % Both left and right trees were actually a scalars, combine
+                % them in a single scalar and return as the NEWTREE.
                 newTree = eval([tree.method, '(newTreeLeft, newTreeRight)']);
             else
                 % Had non derivative parts on both left and right, potentially a
-                % combination of CHEBFUN/scalars and syntax trees. Need to
-                % combine them.
+                % combination of scalars and syntax trees. Need to combine them.
                 if ( ~isa(newTreeLeft, 'treeVar') )
-                    % Left tree was actually a CHEBFUN or scalar, so the new
-                    % diffOrders and height only depend on the right tree.
+                    % Left tree was actually a scalar, so the new diffOrders and
+                    % height only depend on the right tree.
                     newDiffOrder = newTreeRight.diffOrder;
                     newHeight = newTreeRight.height;
                 elseif ( ~isa(newTreeRight, 'treeVar') )
-                    % Right tree was actually a CHEBFUN or scalar, so the new
-                    % diffOrders and height only depend on the right tree.
+                    % Right tree was actually a scalar, so the new diffOrders
+                    % and height only depend on the right tree.
                     newDiffOrder = newTreeLeft.diffOrder;
                     newHeight = newTreeLeft.height;
                 else
@@ -113,16 +111,11 @@ switch tree.numArgs
                 % trees (the non-derivative parts).
                 newTree = treeVar();
                 newTree.method = tree.method;
-                newTree.numArgs = numArgs;
+                newTree.numArgs = tree.numArgs;
                 newTree.left = newTreeLeft;
                 newTree.right = newTreeRight;
                 newTree.diffOrder = newDiffOrder;
                 newTree.height = newHeight;
-%                 newTree = struct('method', tree.method, ...
-%                     'numArgs', tree.numArgs, ...
-%                     'left', newTreeLeft, 'right', newTreeRight, ...
-%                     'diffOrder', newDiffOrder, ...
-%                     'height', newHeight);
             end
             
             if ( isempty(derTreeLeft) )
@@ -143,12 +136,6 @@ switch tree.numArgs
                 derTree.diffOrder = max(derTreeLeft.diffOrder, ...
                     derTreeRight.diffOrder);
                 derTree.height = max(derTreeLeft.height, derTreeRight.height);
-%                 derTree = struct('method', tree.method, ...
-%                     'numArgs', tree.numArgs, ...
-%                     'left', derTreeLeft, 'right', derTreeRight, ...
-%                     'diffOrder', max(derTreeLeft.diffOrder, ...
-%                     derTreeRight.diffOrder), ...
-%                     'height', max(derTreeLeft.height, derTreeRight.height));
             end
             
         end
@@ -172,11 +159,8 @@ if ( strcmp(operator, 'minus') )
         ot.diffOrder = tree.diffOrder;
         ot.ID = tree.ID;
         ot.height = tree.height + 1;
-%         ot = struct('method', 'uminus', 'numArgs', 1, 'center', tree, ...
-%             'diffOrder', tree.diffOrder, 'ID', tree.ID, ...
-%             'height', tree.height + 1);
     else
-        % Input was a CHEBFUN or a scalar, can simply negate it.
+        % Input was a scalar, can simply negate it.
         ot = -tree;
     end
 else
