@@ -6,6 +6,14 @@ else
     fprintf('failed!\n')
 end
 
+fprintf('test_LorenzIVP      ...  ')
+pass = test_LorenzIVP;
+if (all(pass))
+    fprintf('passed!\n')
+else
+    fprintf('failed!\n')
+end
+
 fprintf('test_plotTree       ...  ')
 pass = test_plotTree;
 if (all(pass))
