@@ -179,22 +179,29 @@ for wCounter = 1:length(fevalResult)
     end
     
     % Now work with the remaining syntax tree of the current expression of
-    % interest. We need to negate the syntax tree as we're moving it to the
-    % right-hand side. But if it already starts with a unary minus, we can
-    % simply remove it rather than doing a double negation:
+    % interest. If NEWTREE = 0 (as set above), it is simple to generate infix
+    % form of the remaining syntax tree. If the syntax tree remaining is
+    % nonempty, we need to negate it as we're moving it to the right-hand side.
+    % But if it already starts with a unary minus, we can simply remove it
+    % rather than doing a double negation:
     % [TODO: Remove double UMINUS]
-    tempTree = treeVar();
-    tempTree.method = 'minus';
-    tempTree.numArgs = 2;
-    tempTree.left = rhs(wCounter);
-    tempTree.right = newTree;
-    tempTree.diffOrder = newTree.diffOrder;
-    tempTree.height = newTree.height + 1;
-    tempTree.ID = newTree.ID;
-    
-    % Convert current expression to infix form:
-    [infix, varArray] = ...
-        treeVar.tree2infix(tempTree, maxDerLoc, indexStart);
+    if ( isnumeric(newTree) )
+        infix = '0';
+        varArray = {};
+    else
+        tempTree = treeVar();
+        tempTree.method = 'minus';
+        tempTree.numArgs = 2;
+        tempTree.left = rhs(wCounter);
+        tempTree.right = newTree;
+        tempTree.diffOrder = newTree.diffOrder;
+        tempTree.height = newTree.height + 1;
+        tempTree.ID = newTree.ID;
+        
+        % Convert current expression to infix form:
+        [infix, varArray] = treeVar.tree2infix(tempTree, maxDerLoc, indexStart);        
+    end
+
     % Store the infix form and the variables that appeared in the anonymous
     % function.
     systemInfix{maxDerLoc} = infix;
