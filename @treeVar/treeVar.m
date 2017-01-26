@@ -437,7 +437,7 @@ classdef  (InferiorClasses = {?chebfun}) treeVar
         initVals = setupICs(icFun, totalDiffOrders)
         
         % Solve an IVP
-        [t, y] = solveIVP(odeFun, icFun, rhs, dom)
+        [t, y] = solveIVP(odeFun, icFun, rhs, dom, opts)
         
         % Returns how the results of evaluating BCs should be sorted
         idx = sortConditions(funIn, domain, maxDiffOrders)
